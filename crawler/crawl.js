@@ -4,7 +4,7 @@ const { createClient } = require('@supabase/supabase-js')
 // ── 설정 ──────────────────────────────────────────
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://skmnlekamfuuevcolluz.supabase.co'
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const CONCURRENCY  = parseInt(process.env.CONCURRENCY || '5')
+const CONCURRENCY  = parseInt(process.env.CONCURRENCY || '3')
 const ID_FROM      = parseInt(process.env.ID_FROM || '1000')
 const ID_TO        = parseInt(process.env.ID_TO || '7229')
 const SEARCH_TERM  = encodeURIComponent('닭꼬치')
@@ -23,15 +23,14 @@ async function sleep(ms) {
   return new Promise(r => setTimeout(r, ms))
 }
 
-// 429 시 exponential backoff retry
+// 429 시 5분 대기 후 재시도
 async function fetchHtml(url, retries = 3) {
   for (let i = 0; i < retries; i++) {
     const res = await fetch(url, { headers: HEADERS })
     if (res.ok) return res.text()
     if (res.status === 429) {
-      const wait = (i + 1) * 5000  // 5s, 10s, 15s
-      console.log(`  ⚠ 429 rate limit, ${wait/1000}s 대기 후 재시도... (${url.slice(0, 60)})`)
-      await sleep(wait)
+      console.log(`  ⚠ 429 rate limit, 5분 대기... (시도 ${i + 1}/${retries})`)
+      await sleep(5 * 60 * 1000)
       continue
     }
     console.log(`  ✗ HTTP ${res.status}: ${url.slice(0, 80)}`)
@@ -142,9 +141,11 @@ async function processNeighborhood(id, crawledIds, existingAddresses) {
   const posts = parsePostUrls(html).filter(p => !crawledIds.has(p.postId))
   if (!posts.length) return 0
 
+  await sleep(2000)  // 동네 간 2초 간격
+
   let saved = 0
   for (const { url, postId } of posts) {
-    await sleep(300)
+    await sleep(1500)  // 게시글 간 1.5초 간격
     const postHtml = await fetchHtml(url)
     if (!postHtml) continue
 
