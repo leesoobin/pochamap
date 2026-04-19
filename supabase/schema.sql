@@ -67,4 +67,11 @@ create policy "reports_insert" on reports
 create policy "reports_admin" on reports
   for all using (auth.role() = 'authenticated');
 
+-- 크롤링 기록 테이블 (중복 방지)
+create table if not exists crawled_posts (
+  post_id text primary key,
+  neighborhood_id int,
+  crawled_at timestamptz default now()
+);
+
 -- 스토리지 버킷 (사진 업로드용) - Supabase 대시보드에서 'report-photos' 버킷 생성 필요
