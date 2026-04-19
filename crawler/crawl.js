@@ -4,9 +4,9 @@ const { createClient } = require('@supabase/supabase-js')
 // ── 설정 ──────────────────────────────────────────
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://skmnlekamfuuevcolluz.supabase.co'
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const CONCURRENCY  = 20
-const ID_FROM      = 1000
-const ID_TO        = 7229
+const CONCURRENCY  = parseInt(process.env.CONCURRENCY || '5')
+const ID_FROM      = parseInt(process.env.ID_FROM || '1000')
+const ID_TO        = parseInt(process.env.ID_TO || '7229')
 const SEARCH_TERM  = encodeURIComponent('닭꼬치')
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000
 
@@ -19,14 +19,26 @@ const HEADERS = {
 }
 
 // ── 유틸 ──────────────────────────────────────────
-async function fetchHtml(url) {
-  const res = await fetch(url, { headers: HEADERS })
-  if (!res.ok) return null
-  return res.text()
-}
-
 async function sleep(ms) {
   return new Promise(r => setTimeout(r, ms))
+}
+
+// 429 시 exponential backoff retry
+async function fetchHtml(url, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    const res = await fetch(url, { headers: HEADERS })
+    if (res.ok) return res.text()
+    if (res.status === 429) {
+      const wait = (i + 1) * 5000  // 5s, 10s, 15s
+      console.log(`  ⚠ 429 rate limit, ${wait/1000}s 대기 후 재시도... (${url.slice(0, 60)})`)
+      await sleep(wait)
+      continue
+    }
+    console.log(`  ✗ HTTP ${res.status}: ${url.slice(0, 80)}`)
+    return null
+  }
+  console.log(`  ✗ 최대 재시도 초과: ${url.slice(0, 80)}`)
+  return null
 }
 
 function parseRemixContext(html) {
