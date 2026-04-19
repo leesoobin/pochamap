@@ -1,0 +1,5 @@
+[     240ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://pochamap.sbbs.click/_next/static/chunks/054netu4n8wmy.js:0
+[     320ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/054netu4n8wmy.js from module 64893
+    at https://pochamap.sbbs.click/_next/static/chunks/turbopack-0fs.aw_oby52d.js:1:6129
+[   10970ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://pochamap.sbbs.click/_next/static/chunks/0rv27h_hf1_4m.css:0
+[   11001ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://pochamap.sbbs.click/_next/static/chunks/054netu4n8wmy.js:0

@@ -1,0 +1,17 @@
+[      82ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://pochamap.sbbs.click/_next/static/chunks/09i-lsb~q9le..js:0
+[     115ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/09i-lsb~q9le..js from module 64893
+    at https://pochamap.sbbs.click/_next/static/chunks/turbopack-0fs.aw_oby52d.js:1:6129
+[   17971ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://pochamap.sbbs.click/_next/static/chunks/09i-lsb~q9le..js:0
+[   18004ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/09i-lsb~q9le..js from module 64893
+    at https://pochamap.sbbs.click/_next/static/chunks/turbopack-0fs.aw_oby52d.js:1:6129
+[   18708ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://pochamap.sbbs.click/_next/static/chunks/09i-lsb~q9le..js:0
+[   18742ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/09i-lsb~q9le..js from module 64893
+    at https://pochamap.sbbs.click/_next/static/chunks/turbopack-0fs.aw_oby52d.js:1:6129
+[   19059ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://pochamap.sbbs.click/_next/static/chunks/09i-lsb~q9le..js:0
+[   19093ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/09i-lsb~q9le..js from module 64893
+    at https://pochamap.sbbs.click/_next/static/chunks/turbopack-0fs.aw_oby52d.js:1:6129
+[   19408ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://pochamap.sbbs.click/_next/static/chunks/09i-lsb~q9le..js:0
+[   19444ms] ChunkLoadError: Failed to load chunk /_next/static/chunks/09i-lsb~q9le..js from module 64893
+    at https://pochamap.sbbs.click/_next/static/chunks/turbopack-0fs.aw_oby52d.js:1:6129
+[   21666ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://pochamap.sbbs.click/_next/static/chunks/09i-lsb~q9le..js:0
+[   23032ms] [ERROR] Failed to load resource: the server responded with a status of 500 () @ https://pochamap.sbbs.click/_next/static/chunks/09i-lsb~q9le..js:0
