@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { FoodType, Location } from '@/lib/types'
@@ -9,34 +9,57 @@ import { createClient } from '@/lib/supabase/client'
 
 const KakaoMap = dynamic(() => import('@/components/map/KakaoMap'), { ssr: false })
 
+interface MapBounds {
+  south: number
+  west: number
+  north: number
+  east: number
+}
+
+const DEFAULT_TYPES: FoodType[] = ['chicken_skewer', 'bungeobbang', 'takoyaki']
+
 export default function HomePage() {
-  const [activeFilters, setActiveFilters] = useState<FoodType[]>(['chicken_skewer', 'bungeobbang', 'takoyaki'])
+  const [activeFilters, setActiveFilters] = useState<FoodType[]>(DEFAULT_TYPES)
   const [locations, setLocations] = useState<Location[]>([])
+  const [bounds, setBounds] = useState<MapBounds | null>(null)
+  const [loading, setLoading] = useState(false)
+  const fetchSeqRef = useRef(0)
 
   useEffect(() => {
-    const supabase = createClient()
+    if (!bounds) return
 
-    async function fetchAll(type: FoodType): Promise<Location[]> {
-      const rows: Location[] = []
-      let from = 0
-      while (true) {
-        const { data } = await supabase
-          .from('locations')
-          .select('*')
-          .eq('status', 'approved')
-          .eq('type', type)
-          .range(from, from + 999)
-        const page = (data as Location[]) ?? []
-        rows.push(...page)
-        if (page.length < 1000) break
-        from += 1000
+    if (activeFilters.length === 0) return
+
+    const timer = setTimeout(async () => {
+      const supabase = createClient()
+      const requestId = ++fetchSeqRef.current
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('locations')
+        .select('id,type,name,address,lat,lng,price,hours,description,status,created_at,updated_at')
+        .eq('status', 'approved')
+        .in('type', activeFilters)
+        .gte('lat', bounds.south)
+        .lte('lat', bounds.north)
+        .gte('lng', bounds.west)
+        .lte('lng', bounds.east)
+        .limit(2000)
+
+      if (requestId !== fetchSeqRef.current) return
+
+      if (error) {
+        console.error('Failed to fetch map locations', error)
+        setLocations([])
+      } else {
+        setLocations((data as Location[]) ?? [])
       }
-      return rows
-    }
 
-    Promise.all((['chicken_skewer', 'bungeobbang', 'takoyaki'] as FoodType[]).map(fetchAll))
-      .then(results => setLocations(results.flat()))
-  }, [])
+      setLoading(false)
+    }, 250)
+
+    return () => clearTimeout(timer)
+  }, [bounds, activeFilters])
 
   const toggleFilter = (type: FoodType) => {
     setActiveFilters(prev =>
@@ -44,10 +67,12 @@ export default function HomePage() {
     )
   }
 
+  const visibleLocations = activeFilters.length === 0 ? [] : locations
+
   const counts = {
-    chicken_skewer: locations.filter(l => l.type === 'chicken_skewer').length,
-    bungeobbang: locations.filter(l => l.type === 'bungeobbang').length,
-    takoyaki: locations.filter(l => l.type === 'takoyaki').length,
+    chicken_skewer: visibleLocations.filter(l => l.type === 'chicken_skewer').length,
+    bungeobbang: visibleLocations.filter(l => l.type === 'bungeobbang').length,
+    takoyaki: visibleLocations.filter(l => l.type === 'takoyaki').length,
   }
 
   return (
@@ -68,10 +93,15 @@ export default function HomePage() {
 
       <div className="px-4 py-2 bg-white border-b z-10 shrink-0">
         <FilterBar activeFilters={activeFilters} onToggle={toggleFilter} counts={counts} />
+        {loading && <p className="text-xs text-gray-500 mt-1">지도 범위 데이터를 불러오는 중...</p>}
       </div>
 
       <div className="flex-1 relative">
-        <KakaoMap locations={locations} activeFilters={activeFilters} />
+        <KakaoMap
+          locations={visibleLocations}
+          activeFilters={activeFilters}
+          onBoundsChange={setBounds}
+        />
       </div>
     </div>
   )

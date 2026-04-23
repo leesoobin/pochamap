@@ -13,6 +13,7 @@ interface Props {
   locations: Location[]
   activeFilters: FoodType[]
   onMapClick?: (lat: number, lng: number, address: string) => void
+  onBoundsChange?: (bounds: { south: number; west: number; north: number; east: number }) => void
   selectMode?: boolean
 }
 
@@ -39,25 +40,74 @@ function loadKakaoScript(): Promise<void> {
   })
 }
 
-export default function KakaoMap({ locations, activeFilters, onMapClick, selectMode = false }: Props) {
+export default function KakaoMap({ locations, activeFilters, onMapClick, onBoundsChange, selectMode = false }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const overlaysRef = useRef<any[]>([])
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
   const [mapReady, setMapReady] = useState(false)
 
+  const onMapClickRef = useRef(onMapClick)
+  const onBoundsChangeRef = useRef(onBoundsChange)
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick
+  }, [onMapClick])
+
+  useEffect(() => {
+    onBoundsChangeRef.current = onBoundsChange
+  }, [onBoundsChange])
+
   useEffect(() => {
     let cancelled = false
+    let map: any = null
+    let idleHandler: (() => void) | null = null
+    let clickHandler: ((mouseEvent: any) => void) | null = null
 
     loadKakaoScript().then(() => {
       if (cancelled || !mapRef.current) return
 
-      const map = new window.kakao.maps.Map(mapRef.current, {
+      map = new window.kakao.maps.Map(mapRef.current, {
         center: new window.kakao.maps.LatLng(37.5665, 126.9780),
         level: 7,
       })
+
+      const emitBounds = () => {
+        if (!onBoundsChangeRef.current) return
+        const mapBounds = map.getBounds()
+        const sw = mapBounds.getSouthWest()
+        const ne = mapBounds.getNorthEast()
+        onBoundsChangeRef.current({
+          south: sw.getLat(),
+          west: sw.getLng(),
+          north: ne.getLat(),
+          east: ne.getLng(),
+        })
+      }
+
       mapInstanceRef.current = map
       setMapReady(true)
+
+      idleHandler = () => emitBounds()
+      window.kakao.maps.event.addListener(map, 'idle', idleHandler)
+      emitBounds()
+
+      if (selectMode) {
+        clickHandler = (mouseEvent: any) => {
+          const onMapClickHandler = onMapClickRef.current
+          if (!onMapClickHandler) return
+
+          const latlng = mouseEvent.latLng
+          const geocoder = new window.kakao.maps.services.Geocoder()
+          geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result: any, status: any) => {
+            if (status === window.kakao.maps.services.Status.OK) {
+              const address = result[0]?.road_address?.address_name || result[0]?.address?.address_name || ''
+              onMapClickHandler(latlng.getLat(), latlng.getLng(), address)
+            }
+          })
+        }
+        window.kakao.maps.event.addListener(map, 'click', clickHandler)
+      }
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
@@ -67,23 +117,18 @@ export default function KakaoMap({ locations, activeFilters, onMapClick, selectM
           }
         })
       }
-
-      if (selectMode && onMapClick) {
-        window.kakao.maps.event.addListener(map, 'click', (mouseEvent: any) => {
-          const latlng = mouseEvent.latLng
-          const geocoder = new window.kakao.maps.services.Geocoder()
-          geocoder.coord2Address(latlng.getLng(), latlng.getLat(), (result: any, status: any) => {
-            if (status === window.kakao.maps.services.Status.OK) {
-              const address = result[0]?.road_address?.address_name || result[0]?.address?.address_name || ''
-              onMapClick(latlng.getLat(), latlng.getLng(), address)
-            }
-          })
-        })
-      }
     })
 
-    return () => { cancelled = true }
-  }, [])
+    return () => {
+      cancelled = true
+      if (map && idleHandler) {
+        window.kakao.maps.event.removeListener(map, 'idle', idleHandler)
+      }
+      if (map && clickHandler) {
+        window.kakao.maps.event.removeListener(map, 'click', clickHandler)
+      }
+    }
+  }, [selectMode])
 
   useEffect(() => {
     const map = mapInstanceRef.current
