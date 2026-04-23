@@ -7,8 +7,13 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const CONCURRENCY  = parseInt(process.env.CONCURRENCY || '3')
 const ID_FROM      = parseInt(process.env.ID_FROM || '1000')
 const ID_TO        = parseInt(process.env.ID_TO || '7229')
-const SEARCH_TERM  = encodeURIComponent('닭꼬치')
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000
+
+const FOOD_TYPES = [
+  { type: 'bungeobbang',    keyword: '붕어빵' },
+  { type: 'takoyaki',       keyword: '타코야끼' },
+  { type: 'chicken_skewer', keyword: '닭꼬치' },
+]
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 const limit = pLimit(CONCURRENCY)
@@ -59,9 +64,9 @@ async function loadCrawledIds() {
   return new Set((data || []).map(r => r.post_id))
 }
 
-// ── 이미 등록된 주소 목록 로드 ────────────────────
-async function loadExistingAddresses() {
-  const { data } = await supabase.from('locations').select('address')
+// ── 이미 등록된 주소 목록 로드 (타입별) ──────────
+async function loadExistingAddresses(foodType) {
+  const { data } = await supabase.from('locations').select('address').eq('type', foodType)
   return new Set((data || []).map(r => r.address))
 }
 
@@ -100,7 +105,7 @@ function extractPlace(html) {
   if (!tag.placeTagLatitude || !tag.placeTagLongitude) return null
 
   return {
-    placeName: tag.placeTagTitle || '닭꼬치',
+    placeName: tag.placeTagTitle || '',
     address: tag.address || tag.jibunAddress || '',
     lat: tag.placeTagLatitude,
     lng: tag.placeTagLongitude,
@@ -108,7 +113,7 @@ function extractPlace(html) {
 }
 
 // ── Supabase에 저장 ────────────────────────────────
-async function saveLocation({ postId, neighborhoodId, place, postUrl, existingAddresses }) {
+async function saveLocation({ postId, neighborhoodId, foodType, place, postUrl, existingAddresses }) {
   await supabase.from('crawled_posts').upsert({
     post_id: postId,
     neighborhood_id: neighborhoodId,
@@ -119,7 +124,7 @@ async function saveLocation({ postId, neighborhoodId, place, postUrl, existingAd
   if (existingAddresses.has(place.address)) return false
 
   await supabase.from('locations').insert({
-    type: 'chicken_skewer',
+    type: foodType,
     name: place.placeName,
     address: place.address,
     lat: place.lat,
@@ -133,8 +138,8 @@ async function saveLocation({ postId, neighborhoodId, place, postUrl, existingAd
 }
 
 // ── 동네 하나 처리 ────────────────────────────────
-async function processNeighborhood(id, crawledIds, existingAddresses) {
-  const listUrl = `https://www.daangn.com/kr/community/s/?in=%EC%A7%80%EC%82%B01%EB%8F%99-${id}&search=${SEARCH_TERM}`
+async function processNeighborhood(id, foodType, keyword, crawledIds, existingAddresses) {
+  const listUrl = `https://www.daangn.com/kr/community/s/?in=%EC%A7%80%EC%82%B01%EB%8F%99-${id}&search=${encodeURIComponent(keyword)}`
   const html = await fetchHtml(listUrl)
   if (!html) return 0
 
@@ -160,7 +165,7 @@ async function processNeighborhood(id, crawledIds, existingAddresses) {
       continue
     }
 
-    const inserted = await saveLocation({ postId, neighborhoodId: id, place, postUrl: url, existingAddresses })
+    const inserted = await saveLocation({ postId, neighborhoodId: id, foodType, place, postUrl: url, existingAddresses })
     crawledIds.add(postId)
     if (inserted) {
       saved++
@@ -176,28 +181,34 @@ async function processNeighborhood(id, crawledIds, existingAddresses) {
 async function main() {
   console.log('크롤링 시작...')
 
-  const [crawledIds, existingAddresses] = await Promise.all([
-    loadCrawledIds(),
-    loadExistingAddresses(),
-  ])
-  console.log(`기존 수집 게시글: ${crawledIds.size}개 / 기존 등록 주소: ${existingAddresses.size}개`)
+  const crawledIds = await loadCrawledIds()
+  console.log(`기존 수집 게시글: ${crawledIds.size}개`)
 
   const ids = Array.from({ length: ID_TO - ID_FROM + 1 }, (_, i) => ID_FROM + i)
-  let total = 0
+  let grandTotal = 0
 
-  await Promise.all(
-    ids.map(id =>
-      limit(async () => {
-        const count = await processNeighborhood(id, crawledIds, existingAddresses)
-        if (count > 0) {
-          total += count
-          console.log(`[${id}] 신규 ${count}개 저장`)
-        }
-      })
+  for (const { type, keyword } of FOOD_TYPES) {
+    const existingAddresses = await loadExistingAddresses(type)
+    console.log(`\n[${keyword}] 시작 — 기존 등록 주소: ${existingAddresses.size}개`)
+
+    let total = 0
+    await Promise.all(
+      ids.map(id =>
+        limit(async () => {
+          const count = await processNeighborhood(id, type, keyword, crawledIds, existingAddresses)
+          if (count > 0) {
+            total += count
+            console.log(`[${id}] ${keyword} 신규 ${count}개 저장`)
+          }
+        })
+      )
     )
-  )
 
-  console.log(`완료! 총 ${total}개 새 위치 저장`)
+    console.log(`[${keyword}] 완료 — ${total}개 저장`)
+    grandTotal += total
+  }
+
+  console.log(`\n전체 완료! 총 ${grandTotal}개 새 위치 저장`)
 }
 
 main().catch(console.error)

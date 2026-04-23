@@ -15,13 +15,20 @@ export default function HomePage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase
-      .from('locations')
-      .select('*')
-      .eq('status', 'approved')
-      .then(({ data, error }) => {
-        if (!error) setLocations((data as Location[]) ?? [])
-      })
+    const types: FoodType[] = ['chicken_skewer', 'bungeobbang', 'takoyaki']
+    Promise.all(
+      types.map(type =>
+        supabase
+          .from('locations')
+          .select('*')
+          .eq('status', 'approved')
+          .eq('type', type)
+          .limit(10000)
+      )
+    ).then(results => {
+      const all = results.flatMap(({ data }) => (data as Location[]) ?? [])
+      setLocations(all)
+    })
   }, [])
 
   const toggleFilter = (type: FoodType) => {
