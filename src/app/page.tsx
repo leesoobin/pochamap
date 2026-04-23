@@ -15,20 +15,27 @@ export default function HomePage() {
 
   useEffect(() => {
     const supabase = createClient()
-    const types: FoodType[] = ['chicken_skewer', 'bungeobbang', 'takoyaki']
-    Promise.all(
-      types.map(type =>
-        supabase
+
+    async function fetchAll(type: FoodType): Promise<Location[]> {
+      const rows: Location[] = []
+      let from = 0
+      while (true) {
+        const { data } = await supabase
           .from('locations')
           .select('*')
           .eq('status', 'approved')
           .eq('type', type)
-          .limit(10000)
-      )
-    ).then(results => {
-      const all = results.flatMap(({ data }) => (data as Location[]) ?? [])
-      setLocations(all)
-    })
+          .range(from, from + 999)
+        const page = (data as Location[]) ?? []
+        rows.push(...page)
+        if (page.length < 1000) break
+        from += 1000
+      }
+      return rows
+    }
+
+    Promise.all((['chicken_skewer', 'bungeobbang', 'takoyaki'] as FoodType[]).map(fetchAll))
+      .then(results => setLocations(results.flat()))
   }, [])
 
   const toggleFilter = (type: FoodType) => {
