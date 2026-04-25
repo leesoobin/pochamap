@@ -166,22 +166,35 @@ export default function KakaoMap({ locations, activeFilters, onMapClick, onBound
       <div ref={mapRef} className="w-full h-full" />
 
       {selectedLocation && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white rounded-2xl shadow-xl p-4 w-80 z-10">
-          <button onClick={() => setSelectedLocation(null)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600">✕</button>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">{FOOD_EMOJI[selectedLocation.type]}</span>
-            <div>
-              <p className="font-bold text-gray-900">{selectedLocation.name}</p>
-              <p className="text-xs text-gray-500">{FOOD_LABELS[selectedLocation.type]}</p>
+        <>
+          <div
+            className="absolute inset-0 z-10"
+            onClick={() => setSelectedLocation(null)}
+          />
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-20">
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-gray-200" />
+            </div>
+            <button
+              onClick={() => setSelectedLocation(null)}
+              className="absolute top-3 right-4 text-gray-400 hover:text-gray-600 text-lg leading-none"
+            >✕</button>
+            <div className="px-5 pb-8 pt-1">
+              <p className="text-sm text-gray-400 mb-1">
+                {FOOD_EMOJI[selectedLocation.type]} {FOOD_LABELS[selectedLocation.type]}
+              </p>
+              <p className="text-xl font-bold text-gray-900 mb-2">{selectedLocation.name}</p>
+              <p className="text-sm text-gray-600 mb-1">📍 {selectedLocation.address}</p>
+              {selectedLocation.price && <p className="text-sm text-gray-600 mb-1">💰 {selectedLocation.price}</p>}
+              {selectedLocation.hours && <p className="text-sm text-gray-600 mb-1">🕐 {selectedLocation.hours}</p>}
+              {selectedLocation.description?.startsWith('당근마켓 제보') && (
+                <p className="text-xs text-orange-400 mt-3">
+                  🥕 당근마켓 제보 · {new Date(selectedLocation.created_at).toLocaleDateString('ko-KR')}
+                </p>
+              )}
             </div>
           </div>
-          <p className="text-sm text-gray-600 mb-1">📍 {selectedLocation.address}</p>
-          {selectedLocation.price && <p className="text-sm text-gray-600 mb-1">💰 {selectedLocation.price}</p>}
-          {selectedLocation.hours && <p className="text-sm text-gray-600">🕐 {selectedLocation.hours}</p>}
-          {selectedLocation.description && (
-            <p className="text-sm text-gray-500 mt-2 border-t pt-2">{selectedLocation.description}</p>
-          )}
-        </div>
+        </>
       )}
     </div>
   )

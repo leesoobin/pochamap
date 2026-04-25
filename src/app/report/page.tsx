@@ -24,8 +24,6 @@ export default function ReportPage() {
     description: '',
     reporter_memo: '',
   })
-  const [photo, setPhoto] = useState<File | null>(null)
-
   const handleMapClick = (lat: number, lng: number, address: string) => {
     setForm(prev => ({ ...prev, lat, lng, address }))
     setStep('form')
@@ -38,19 +36,6 @@ export default function ReportPage() {
     setSubmitting(true)
     const supabase = createClient()
 
-    let photo_url: string | null = null
-    if (photo) {
-      const ext = photo.name.split('.').pop()
-      const path = `${Date.now()}.${ext}`
-      const { data: uploadData } = await supabase.storage
-        .from('report-photos')
-        .upload(path, photo)
-      if (uploadData) {
-        const { data: urlData } = supabase.storage.from('report-photos').getPublicUrl(path)
-        photo_url = urlData.publicUrl
-      }
-    }
-
     const { error } = await supabase.from('reports').insert({
       type: form.type,
       name: form.name,
@@ -61,7 +46,7 @@ export default function ReportPage() {
       hours: form.hours || null,
       description: form.description || null,
       reporter_memo: form.reporter_memo || null,
-      photo_url,
+      photo_url: null,
       status: 'pending',
     })
 
@@ -173,17 +158,6 @@ export default function ReportPage() {
             placeholder="관리자에게 전달할 메모 (선택)"
             rows={3}
             className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400 resize-none"
-          />
-        </div>
-
-        {/* 사진 */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">사진 (선택)</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={e => setPhoto(e.target.files?.[0] ?? null)}
-            className="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
           />
         </div>
 
