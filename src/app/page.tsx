@@ -23,11 +23,23 @@ export default function HomePage() {
   const [locations, setLocations] = useState<Location[]>([])
   const [bounds, setBounds] = useState<MapBounds | null>(null)
   const [loading, setLoading] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const fetchSeqRef = useRef(0)
 
   useEffect(() => {
-    if (!bounds) return
+    const supabase = createClient()
+    supabase
+      .from('locations')
+      .select('created_at')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (data?.[0]) setLastUpdated(data[0].created_at)
+      })
+  }, [])
 
+  useEffect(() => {
+    if (!bounds) return
     if (activeFilters.length === 0) return
 
     const timer = setTimeout(async () => {
@@ -77,24 +89,36 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b z-10 shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🏮</span>
-          <span className="font-bold text-lg text-gray-900">pochamap</span>
+      <header className="bg-white shadow-sm z-10 shrink-0">
+        <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center text-[15px] leading-none">
+              🍢
+            </div>
+            <div className="flex flex-col gap-[3px]">
+              <span className="font-bold text-[15px] text-gray-900 leading-none tracking-tight">pochamap</span>
+              <span className="text-[10px] text-gray-400 font-medium leading-none">내 주변 길거리 음식</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {lastUpdated && (
+              <span className="text-[9px] text-gray-300 font-medium">
+                {new Date(lastUpdated).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })} 기준
+              </span>
+            )}
+            <Link
+              href="/report"
+              className="flex items-center gap-1.5 border border-gray-200 text-gray-500 text-[11px] font-semibold px-3 h-7 rounded-full hover:border-orange-300 hover:text-orange-500 transition-colors"
+            >
+              <span className="w-3.5 h-3.5 rounded-full bg-orange-500 text-white text-[9px] font-bold flex items-center justify-center leading-none shrink-0">+</span>
+              제보하기
+            </Link>
+          </div>
         </div>
-        <Link
-          href="/report"
-          className="flex items-center gap-1 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-3 py-2 rounded-full transition-colors"
-        >
-          <span>+</span>
-          <span>제보하기</span>
-        </Link>
+        <div className="px-2">
+          <FilterBar activeFilters={activeFilters} onToggle={toggleFilter} counts={counts} />
+        </div>
       </header>
-
-      <div className="px-4 py-2 bg-white border-b z-10 shrink-0">
-        <FilterBar activeFilters={activeFilters} onToggle={toggleFilter} counts={counts} />
-        {loading && <p className="text-xs text-gray-500 mt-1">지도 범위 데이터를 불러오는 중...</p>}
-      </div>
 
       <div className="flex-1 relative">
         <KakaoMap
@@ -102,6 +126,11 @@ export default function HomePage() {
           activeFilters={activeFilters}
           onBoundsChange={setBounds}
         />
+        {loading && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm pointer-events-none">
+            <p className="text-[11px] text-gray-500 font-medium whitespace-nowrap">불러오는 중...</p>
+          </div>
+        )}
       </div>
     </div>
   )
