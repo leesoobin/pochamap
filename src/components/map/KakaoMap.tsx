@@ -218,8 +218,8 @@ export default function KakaoMap({ locations, activeFilters, onMapClick, onBound
             {selectedLocation.price && <p className="text-sm text-gray-600 mb-1">💰 {selectedLocation.price}</p>}
             {selectedLocation.hours && <p className="text-sm text-gray-600 mb-1">🕐 {selectedLocation.hours}</p>}
             {selectedLocation.description?.startsWith('당근마켓 제보') && (
-              <p className="text-xs text-orange-400 mt-3">
-                🥕 당근마켓 제보 · {new Date(selectedLocation.created_at).toLocaleDateString('ko-KR')}
+              <p className="text-xs text-gray-400 mt-3">
+                🌐 커뮤니티 제보 · {new Date(selectedLocation.created_at).toLocaleDateString('ko-KR')}
               </p>
             )}
           </div>
