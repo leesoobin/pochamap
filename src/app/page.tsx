@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { FoodType, Location } from '@/lib/types'
 import FilterBar from '@/components/map/FilterBar'
+import AdBanner from '@/components/AdBanner'
 import { createClient } from '@/lib/supabase/client'
 
 const KakaoMap = dynamic(() => import('@/components/map/KakaoMap'), { ssr: false })
@@ -132,6 +133,7 @@ export default function HomePage() {
           </div>
         )}
       </div>
+      <AdBanner />
     </div>
   )
 }
