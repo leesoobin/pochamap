@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { FoodType, Location } from '@/lib/types'
 import FilterBar from '@/components/map/FilterBar'
-import AdBanner from '@/components/AdBanner'
+// import AdBanner from '@/components/AdBanner'
 import { createClient } from '@/lib/supabase/client'
 
 const KakaoMap = dynamic(() => import('@/components/map/KakaoMap'), { ssr: false })
@@ -25,7 +25,17 @@ export default function HomePage() {
   const [bounds, setBounds] = useState<MapBounds | null>(null)
   const [loading, setLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
+  const [headerHeight, setHeaderHeight] = useState(0)
+  const headerRef = useRef<HTMLElement>(null)
   const fetchSeqRef = useRef(0)
+
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => setHeaderHeight(entries[0].contentRect.height))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   useEffect(() => {
     const supabase = createClient()
@@ -88,9 +98,11 @@ export default function HomePage() {
     takoyaki: visibleLocations.filter(l => l.type === 'takoyaki').length,
   }
 
+  const AD_HEIGHT = 0 // 광고 승인 후 60으로 변경
+
   return (
-    <div className="flex flex-col h-full">
-      <header className="bg-white shadow-sm z-10 shrink-0">
+    <>
+      <header ref={headerRef} className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
         <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center text-[15px] leading-none">
@@ -121,7 +133,15 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="flex-1 relative">
+      <div
+        style={{
+          position: 'fixed',
+          top: headerHeight,
+          left: 0,
+          right: 0,
+          bottom: AD_HEIGHT,
+        }}
+      >
         <KakaoMap
           locations={visibleLocations}
           activeFilters={activeFilters}
@@ -133,7 +153,12 @@ export default function HomePage() {
           </div>
         )}
       </div>
-      <AdBanner />
-    </div>
+
+      {/* AdSense 광고 승인 후 활성화
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: AD_HEIGHT, overflow: 'hidden' }}>
+        <AdBanner />
+      </div>
+      */}
+    </>
   )
 }

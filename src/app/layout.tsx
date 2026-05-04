@@ -16,12 +16,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko" className="h-full">
       <body className="h-full antialiased" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+        {/* AdSense 광고 승인 후 활성화
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4098269039875449"
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
+        */}
         {children}
       </body>
     </html>
