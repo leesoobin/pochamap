@@ -154,7 +154,7 @@ export default function HomePage() {
         )}
       </div>
 
-      <AdBanner onLoad={() => setAdHeight(100)} onClose={() => setAdHeight(0)} />
+      <AdBanner onLoad={(h) => setAdHeight(h)} onClose={() => setAdHeight(0)} />
     </>
   )
 }
