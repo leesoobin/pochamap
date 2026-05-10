@@ -6,7 +6,11 @@ declare global {
   interface Window { PartnersCoupang: any }
 }
 
-export default function AdBanner() {
+interface Props {
+  onLoad?: () => void
+}
+
+export default function AdBanner({ onLoad }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const loaded = useRef(false)
   const [visible, setVisible] = useState(false)
@@ -31,42 +35,39 @@ export default function AdBanner() {
           containerRef.current.appendChild(ins)
         }
         setVisible(true)
+        onLoad?.()
       }, 600)
     }
     g.onerror = () => {} // 로드 실패 시 아무것도 안 보임
     containerRef.current.appendChild(g)
   }, [])
 
-  if (closed) return null
+  if (closed || !visible) return null
 
   return (
     <div
       style={{
-        position: 'fixed', bottom: 20, left: '50%',
-        transform: 'translateX(-50%)', zIndex: 15, width: 320,
-        opacity: visible ? 1 : 0,
-        pointerEvents: visible ? 'auto' : 'none',
-        transition: 'opacity 0.3s',
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        height: 100, zIndex: 15,
+        background: '#fff', borderTop: '1px solid #f0f0f0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
       }}
     >
       <button
         onClick={() => setClosed(true)}
         style={{
-          position: 'absolute', top: -10, right: -10, zIndex: 1,
-          width: 22, height: 22, borderRadius: '50%',
-          background: 'rgba(0,0,0,0.5)', color: '#fff',
-          border: 'none', cursor: 'pointer', fontSize: 11,
+          position: 'absolute', top: 4, right: 8, zIndex: 1,
+          width: 20, height: 20, borderRadius: '50%',
+          background: 'rgba(0,0,0,0.35)', color: '#fff',
+          border: 'none', cursor: 'pointer', fontSize: 10,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
         title="광고 닫기"
       >✕</button>
       <div
         ref={containerRef}
-        style={{
-          width: 320, height: 100, overflow: 'hidden',
-          borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          background: '#fff',
-        }}
+        style={{ width: 320, height: 100, overflow: 'hidden' }}
       />
     </div>
   )

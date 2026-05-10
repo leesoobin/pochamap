@@ -26,6 +26,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
   const [headerHeight, setHeaderHeight] = useState(0)
+  const [adHeight, setAdHeight] = useState(0)
   const headerRef = useRef<HTMLElement>(null)
   const fetchSeqRef = useRef(0)
 
@@ -137,7 +138,7 @@ export default function HomePage() {
           top: headerHeight,
           left: 0,
           right: 0,
-          bottom: 0,
+          bottom: adHeight,
         }}
       >
         <KakaoMap
@@ -152,7 +153,7 @@ export default function HomePage() {
         )}
       </div>
 
-      <AdBanner />
+      <AdBanner onLoad={() => setAdHeight(100)} />
     </>
   )
 }
