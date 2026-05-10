@@ -15,6 +15,7 @@ interface Props {
   onMapClick?: (lat: number, lng: number, address: string) => void
   onBoundsChange?: (bounds: { south: number; west: number; north: number; east: number }) => void
   selectMode?: boolean
+  adHeight?: number
 }
 
 function loadKakaoScript(): Promise<void> {
@@ -49,7 +50,7 @@ function ensureMyLocationStyle() {
   document.head.appendChild(style)
 }
 
-export default function KakaoMap({ locations, activeFilters, onMapClick, onBoundsChange, selectMode = false }: Props) {
+export default function KakaoMap({ locations, activeFilters, onMapClick, onBoundsChange, selectMode = false, adHeight = 0 }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const overlaysRef = useRef<any[]>([])
@@ -191,7 +192,8 @@ export default function KakaoMap({ locations, activeFilters, onMapClick, onBound
 
       {!selectedLocation && <button
         onClick={goToMyLocation}
-        className="fixed bottom-4 right-4 w-10 h-10 bg-white border border-gray-200 rounded-xl shadow-md flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors z-10"
+        style={{ bottom: adHeight + 16 }}
+        className="fixed right-4 w-10 h-10 bg-white border border-gray-200 rounded-xl shadow-md flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors z-10"
         title="현재 위치"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -201,7 +203,7 @@ export default function KakaoMap({ locations, activeFilters, onMapClick, onBound
       </button>}
 
       {selectedLocation && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-20">
+        <div className="fixed left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-20" style={{ bottom: adHeight }}>
           <div className="flex justify-center pt-3 pb-1">
             <div className="w-10 h-1 rounded-full bg-gray-200" />
           </div>

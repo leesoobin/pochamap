@@ -145,6 +145,7 @@ export default function HomePage() {
           locations={visibleLocations}
           activeFilters={activeFilters}
           onBoundsChange={setBounds}
+          adHeight={adHeight}
         />
         {loading && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm pointer-events-none">
@@ -153,7 +154,7 @@ export default function HomePage() {
         )}
       </div>
 
-      <AdBanner onLoad={() => setAdHeight(100)} />
+      <AdBanner onLoad={() => setAdHeight(100)} onClose={() => setAdHeight(0)} />
     </>
   )
 }

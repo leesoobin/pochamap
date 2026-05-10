@@ -4,11 +4,12 @@ import { useState } from 'react'
 
 interface Props {
   onLoad?: () => void
+  onClose?: () => void
 }
 
 const AD_HTML = `<!DOCTYPE html><html><body style="margin:0;padding:0;overflow:hidden;background:transparent"><script src="https://ads-partners.coupang.com/g.js"><\/script><script>new PartnersCoupang.G({"id":987741,"template":"carousel","trackingCode":"AF7428239","width":"320","height":"100","tsource":""});<\/script></body></html>`
 
-export default function AdBanner({ onLoad }: Props) {
+export default function AdBanner({ onLoad, onClose }: Props) {
   const [closed, setClosed] = useState(false)
 
   if (closed) return null
@@ -23,7 +24,7 @@ export default function AdBanner({ onLoad }: Props) {
       }}
     >
       <button
-        onClick={() => setClosed(true)}
+        onClick={() => { setClosed(true); onClose?.() }}
         style={{
           position: 'absolute', top: 4, right: 8,
           width: 20, height: 20, borderRadius: '50%',
