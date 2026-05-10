@@ -11,30 +11,27 @@ export default function AdBanner() {
   const loaded = useRef(false)
 
   useEffect(() => {
-    if (loaded.current) return
+    if (loaded.current || !containerRef.current) return
     loaded.current = true
+
+    function initAd() {
+      if (!containerRef.current) return
+      // init 스크립트를 컨테이너 안에서 실행 → 쿠팡이 이 위치에 ins 삽입
+      const s = document.createElement('script')
+      s.text = `new PartnersCoupang.G({"id":987741,"template":"carousel","trackingCode":"AF7428239","width":"320","height":"100","tsource":""});`
+      containerRef.current.appendChild(s)
+    }
+
+    if (window.PartnersCoupang) {
+      initAd()
+      return
+    }
 
     const script = document.createElement('script')
     script.src = 'https://ads-partners.coupang.com/g.js'
     script.async = true
-    script.onload = () => {
-      new window.PartnersCoupang.G({
-        id: 987741,
-        template: 'carousel',
-        trackingCode: 'AF7428239',
-        width: '320',
-        height: '100',
-        tsource: '',
-      })
-      // 쿠팡이 body에 추가한 ins 태그를 컨테이너로 이동
-      setTimeout(() => {
-        const ins = document.body.querySelector('ins[id^="987741"]')
-        if (ins && containerRef.current) {
-          containerRef.current.appendChild(ins)
-        }
-      }, 200)
-    }
-    document.body.appendChild(script)
+    script.onload = initAd
+    document.head.appendChild(script)
   }, [])
 
   return (
