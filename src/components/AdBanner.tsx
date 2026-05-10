@@ -6,8 +6,6 @@ declare global {
   interface Window { PartnersCoupang: any }
 }
 
-const AD_ID = 987741
-
 export default function AdBanner() {
   const containerRef = useRef<HTMLDivElement>(null)
   const loaded = useRef(false)
@@ -18,35 +16,33 @@ export default function AdBanner() {
     if (loaded.current || !containerRef.current) return
     loaded.current = true
 
-    function initAd() {
-      if (!containerRef.current) return
-      const s = document.createElement('script')
-      s.text = `new PartnersCoupang.G({"id":${AD_ID},"template":"carousel","trackingCode":"AF7428239","width":"320","height":"100","tsource":""});`
-      containerRef.current.appendChild(s)
-
-      // 쿠팡이 body에 생성한 ins를 containerRef로 이동
-      setTimeout(() => {
-        const ins = document.body.querySelector(`ins[id^="${AD_ID}"]`)
-        if (ins && containerRef.current) {
-          containerRef.current.appendChild(ins)
-          setVisible(true)
-        }
-      }, 800)
+    // toss와 동일하게: g.js → init script 순서대로 컨테이너 안에 삽입
+    const g = document.createElement('script')
+    g.src = 'https://ads-partners.coupang.com/g.js'
+    g.async = true
+    g.onload = () => {
+      const init = document.createElement('script')
+      init.text = `new PartnersCoupang.G({"id":987741,"template":"carousel","trackingCode":"AF7428239","width":"320","height":"100","tsource":""});`
+      containerRef.current?.appendChild(init)
+      // 광고 렌더링 대기 후 표시
+      setTimeout(() => setVisible(true), 600)
     }
-
-    if (window.PartnersCoupang) { initAd(); return }
-
-    const script = document.createElement('script')
-    script.src = 'https://ads-partners.coupang.com/g.js'
-    script.async = true
-    script.onload = initAd
-    document.head.appendChild(script)
+    g.onerror = () => {} // 로드 실패 시 아무것도 안 보임
+    containerRef.current.appendChild(g)
   }, [])
 
-  if (closed || !visible) return null
+  if (closed) return null
 
   return (
-    <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 15, width: 320 }}>
+    <div
+      style={{
+        position: 'fixed', bottom: 20, left: '50%',
+        transform: 'translateX(-50%)', zIndex: 15, width: 320,
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'auto' : 'none',
+        transition: 'opacity 0.3s',
+      }}
+    >
       <button
         onClick={() => setClosed(true)}
         style={{
