@@ -55,7 +55,9 @@ export default function KakaoMap({ locations, activeFilters, onMapClick, onBound
   const mapInstanceRef = useRef<any>(null)
   const overlaysRef = useRef<any[]>([])
   const myLocOverlayRef = useRef<any>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
+  const [cardHeight, setCardHeight] = useState(0)
   const [mapReady, setMapReady] = useState(false)
 
   const onMapClickRef = useRef(onMapClick)
@@ -63,6 +65,14 @@ export default function KakaoMap({ locations, activeFilters, onMapClick, onBound
 
   useEffect(() => { onMapClickRef.current = onMapClick }, [onMapClick])
   useEffect(() => { onBoundsChangeRef.current = onBoundsChange }, [onBoundsChange])
+
+  useEffect(() => {
+    if (selectedLocation && cardRef.current) {
+      setCardHeight(cardRef.current.getBoundingClientRect().height)
+    } else {
+      setCardHeight(0)
+    }
+  }, [selectedLocation])
 
   const showMyLocation = (lat: number, lng: number) => {
     const map = mapInstanceRef.current
@@ -190,9 +200,9 @@ export default function KakaoMap({ locations, activeFilters, onMapClick, onBound
     <div style={{ position: 'absolute', inset: 0 }}>
       <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
-      {!selectedLocation && <button
+      <button
         onClick={goToMyLocation}
-        style={{ bottom: adHeight + 16 }}
+        style={{ bottom: adHeight + cardHeight + 16, transition: 'bottom 0.2s' }}
         className="fixed right-4 w-10 h-10 bg-white border border-gray-200 rounded-xl shadow-md flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors z-10"
         title="현재 위치"
       >
@@ -200,10 +210,11 @@ export default function KakaoMap({ locations, activeFilters, onMapClick, onBound
           <circle cx="12" cy="12" r="3"/>
           <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
         </svg>
-      </button>}
+      </button>
 
       {selectedLocation && (
-        <div className="fixed left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-20" style={{ bottom: adHeight }}>
+
+        <div ref={cardRef} className="fixed left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-20" style={{ bottom: adHeight }}>
           <div className="flex justify-center pt-3 pb-1">
             <div className="w-10 h-1 rounded-full bg-gray-200" />
           </div>
