@@ -1,28 +1,46 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 declare global {
-  interface Window { adsbygoogle: any[] }
+  interface Window { PartnersCoupang: any }
 }
 
 export default function AdBanner() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const loaded = useRef(false)
+
   useEffect(() => {
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({})
-    } catch {}
+    if (loaded.current) return
+    loaded.current = true
+
+    const script = document.createElement('script')
+    script.src = 'https://ads-partners.coupang.com/g.js'
+    script.async = true
+    script.onload = () => {
+      new window.PartnersCoupang.G({
+        id: 987741,
+        template: 'carousel',
+        trackingCode: 'AF7428239',
+        width: '320',
+        height: '100',
+        tsource: '',
+      })
+      // 쿠팡이 body에 추가한 ins 태그를 컨테이너로 이동
+      setTimeout(() => {
+        const ins = document.body.querySelector('ins[id^="987741"]')
+        if (ins && containerRef.current) {
+          containerRef.current.appendChild(ins)
+        }
+      }, 200)
+    }
+    document.body.appendChild(script)
   }, [])
 
   return (
-    <div className="w-full bg-white border-t border-gray-100 shrink-0" style={{ minHeight: 60 }}>
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-client="ca-pub-4098269039875449"
-        data-ad-slot="YOUR_SLOT_ID"
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      />
-    </div>
+    <div
+      ref={containerRef}
+      style={{ width: '100%', height: 100, overflow: 'hidden', background: '#fff', borderTop: '1px solid #f3f4f6' }}
+    />
   )
 }

@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { FoodType, Location } from '@/lib/types'
 import FilterBar from '@/components/map/FilterBar'
-// import AdBanner from '@/components/AdBanner'
+import AdBanner from '@/components/AdBanner'
 import { createClient } from '@/lib/supabase/client'
 
 const KakaoMap = dynamic(() => import('@/components/map/KakaoMap'), { ssr: false })
@@ -98,7 +98,7 @@ export default function HomePage() {
     takoyaki: visibleLocations.filter(l => l.type === 'takoyaki').length,
   }
 
-  const AD_HEIGHT = 0 // 광고 승인 후 60으로 변경
+  const AD_HEIGHT = 100
 
   return (
     <>
@@ -154,11 +154,9 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* AdSense 광고 승인 후 활성화
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: AD_HEIGHT, overflow: 'hidden' }}>
         <AdBanner />
       </div>
-      */}
     </>
   )
 }
