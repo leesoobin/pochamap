@@ -6,6 +6,8 @@ declare global {
   interface Window { PartnersCoupang: any }
 }
 
+const AD_ID = 987741
+
 export default function AdBanner() {
   const containerRef = useRef<HTMLDivElement>(null)
   const loaded = useRef(false)
@@ -16,18 +18,17 @@ export default function AdBanner() {
     if (loaded.current || !containerRef.current) return
     loaded.current = true
 
-    // 3초 내 광고 미로드 시 자동 숨김
-    const timeout = setTimeout(() => setVisible(false), 3000)
-
     function initAd() {
       if (!containerRef.current) return
       const s = document.createElement('script')
-      s.text = `new PartnersCoupang.G({"id":987741,"template":"carousel","trackingCode":"AF7428239","width":"320","height":"100","tsource":""});`
+      s.text = `new PartnersCoupang.G({"id":${AD_ID},"template":"carousel","trackingCode":"AF7428239","width":"320","height":"100","tsource":""});`
       containerRef.current.appendChild(s)
-      // 광고 DOM 생성 대기 후 visible
+
+      // 쿠팡이 body에 생성한 ins를 containerRef로 이동
       setTimeout(() => {
-        clearTimeout(timeout)
-        if (containerRef.current?.querySelector('ins, iframe')) {
+        const ins = document.body.querySelector(`ins[id^="${AD_ID}"]`)
+        if (ins && containerRef.current) {
+          containerRef.current.appendChild(ins)
           setVisible(true)
         }
       }, 800)
@@ -39,10 +40,7 @@ export default function AdBanner() {
     script.src = 'https://ads-partners.coupang.com/g.js'
     script.async = true
     script.onload = initAd
-    script.onerror = () => clearTimeout(timeout)
     document.head.appendChild(script)
-
-    return () => clearTimeout(timeout)
   }, [])
 
   if (closed || !visible) return null
