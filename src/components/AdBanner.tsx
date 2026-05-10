@@ -24,8 +24,14 @@ export default function AdBanner() {
       const init = document.createElement('script')
       init.text = `new PartnersCoupang.G({"id":987741,"template":"carousel","trackingCode":"AF7428239","width":"320","height":"100","tsource":""});`
       containerRef.current?.appendChild(init)
-      // 광고 렌더링 대기 후 표시
-      setTimeout(() => setVisible(true), 600)
+      // body에 생성된 ins를 containerRef로 이동
+      setTimeout(() => {
+        const ins = Array.from(document.body.children).find(el => el.tagName === 'INS') as HTMLElement | undefined
+        if (ins && containerRef.current) {
+          containerRef.current.appendChild(ins)
+        }
+        setVisible(true)
+      }, 600)
     }
     g.onerror = () => {} // 로드 실패 시 아무것도 안 보임
     containerRef.current.appendChild(g)
