@@ -98,8 +98,6 @@ export default function HomePage() {
     takoyaki: visibleLocations.filter(l => l.type === 'takoyaki').length,
   }
 
-  const AD_HEIGHT = 100
-
   return (
     <>
       <header ref={headerRef} className="fixed top-0 left-0 right-0 bg-white shadow-sm z-10">
@@ -139,7 +137,7 @@ export default function HomePage() {
           top: headerHeight,
           left: 0,
           right: 0,
-          bottom: AD_HEIGHT,
+          bottom: 0,
         }}
       >
         <KakaoMap
@@ -154,9 +152,7 @@ export default function HomePage() {
         )}
       </div>
 
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: AD_HEIGHT, overflow: 'hidden' }}>
-        <AdBanner />
-      </div>
+      <AdBanner />
     </>
   )
 }
