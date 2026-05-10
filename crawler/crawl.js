@@ -64,10 +64,33 @@ async function loadCrawledIds() {
   return new Set((data || []).map(r => r.post_id))
 }
 
-// ── 이미 등록된 주소 목록 로드 (타입별) ──────────
-async function loadExistingAddresses(foodType) {
-  const { data } = await supabase.from('locations').select('address').eq('type', foodType)
-  return new Set((data || []).map(r => r.address))
+// ── 이미 등록된 위치 목록 로드 (타입별) ──────────
+async function loadExistingLocations(foodType) {
+  const all = []
+  let from = 0
+  while (true) {
+    const { data } = await supabase.from('locations')
+      .select('address, lat, lng')
+      .eq('type', foodType)
+      .range(from, from + 999)
+    if (!data || data.length === 0) break
+    all.push(...data)
+    if (data.length < 1000) break
+    from += 1000
+  }
+  return all
+}
+
+// 반경 50m 이내 중복 체크
+function isTooClose(lat1, lng1, existing) {
+  for (const loc of existing) {
+    const dLat = (lat1 - loc.lat) * Math.PI / 180
+    const dLng = (lng1 - loc.lng) * Math.PI / 180
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(loc.lat*Math.PI/180) * Math.sin(dLng/2)**2
+    const dist = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    if (dist < 50) return true
+  }
+  return false
 }
 
 // ── 목록 페이지에서 게시글 URL 추출 ───────────────
@@ -113,15 +136,17 @@ function extractPlace(html) {
 }
 
 // ── Supabase에 저장 ────────────────────────────────
-async function saveLocation({ postId, neighborhoodId, foodType, place, postUrl, existingAddresses }) {
+async function saveLocation({ postId, neighborhoodId, foodType, place, postUrl, existingLocations }) {
   await supabase.from('crawled_posts').upsert({
     post_id: postId,
     neighborhood_id: neighborhoodId,
     crawled_at: new Date().toISOString(),
   })
 
-  // 주소 중복 체크
-  if (existingAddresses.has(place.address)) return false
+  // 주소 또는 50m 반경 내 중복 체크
+  const addrSet = new Set(existingLocations.map(l => l.address))
+  if (addrSet.has(place.address)) return false
+  if (isTooClose(place.lat, place.lng, existingLocations)) return false
 
   await supabase.from('locations').insert({
     type: foodType,
@@ -133,12 +158,12 @@ async function saveLocation({ postId, neighborhoodId, foodType, place, postUrl, 
     status: 'approved',
   })
 
-  existingAddresses.add(place.address)
+  existingLocations.push({ address: place.address, lat: place.lat, lng: place.lng })
   return true
 }
 
 // ── 동네 하나 처리 ────────────────────────────────
-async function processNeighborhood(id, foodType, keyword, crawledIds, existingAddresses) {
+async function processNeighborhood(id, foodType, keyword, crawledIds, existingLocations) {
   const listUrl = `https://www.daangn.com/kr/community/s/?in=%EC%A7%80%EC%82%B01%EB%8F%99-${id}&search=${encodeURIComponent(keyword)}`
   const html = await fetchHtml(listUrl)
   if (!html) return 0
@@ -165,7 +190,7 @@ async function processNeighborhood(id, foodType, keyword, crawledIds, existingAd
       continue
     }
 
-    const inserted = await saveLocation({ postId, neighborhoodId: id, foodType, place, postUrl: url, existingAddresses })
+    const inserted = await saveLocation({ postId, neighborhoodId: id, foodType, place, postUrl: url, existingLocations })
     crawledIds.add(postId)
     if (inserted) {
       saved++
@@ -188,14 +213,14 @@ async function main() {
   let grandTotal = 0
 
   for (const { type, keyword } of FOOD_TYPES) {
-    const existingAddresses = await loadExistingAddresses(type)
-    console.log(`\n[${keyword}] 시작 — 기존 등록 주소: ${existingAddresses.size}개`)
+    const existingLocations = await loadExistingLocations(type)
+    console.log(`\n[${keyword}] 시작 — 기존 등록 위치: ${existingLocations.length}개`)
 
     let total = 0
     await Promise.all(
       ids.map(id =>
         limit(async () => {
-          const count = await processNeighborhood(id, type, keyword, crawledIds, existingAddresses)
+          const count = await processNeighborhood(id, type, keyword, crawledIds, existingLocations)
           if (count > 0) {
             total += count
             console.log(`[${id}] ${keyword} 신규 ${count}개 저장`)
